@@ -3,21 +3,21 @@ local UserInputService = game:GetService("UserInputService")
 
 -- Main UI
 local ScreenGui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
-ScreenGui.Name = "DevConsole_Final_V5"
+ScreenGui.Name = "DevConsole_V10_Fixed"
 ScreenGui.ResetOnSpawn = false
 
 -- --- MAIN FRAME ---
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.Position = UDim2.new(0.5, -275, 0.4, -175)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true 
 
--- --- TITLE BAR (DRAGGING AREA) ---
+-- --- TITLE BAR ---
 local TitleBar = Instance.new("Frame", MainFrame)
 TitleBar.Size = UDim2.new(1, 0, 0, 35)
-TitleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+TitleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 TitleBar.BorderSizePixel = 0
 
 local TitleText = Instance.new("TextLabel", TitleBar)
@@ -30,10 +30,10 @@ TitleText.TextColor3 = Color3.new(1, 1, 1)
 TitleText.BackgroundTransparency = 1
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
 
--- Search Box (Stays in Title Bar)
+-- Search Box
 local SearchBox = Instance.new("TextBox", TitleBar)
-SearchBox.Size = UDim2.new(0, 150, 0, 22)
-SearchBox.Position = UDim2.new(1, -195, 0.5, -11)
+SearchBox.Size = UDim2.new(0, 140, 0, 24)
+SearchBox.Position = UDim2.new(1, -185, 0.5, -12)
 SearchBox.PlaceholderText = "Search..."
 SearchBox.Text = ""
 SearchBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -46,10 +46,9 @@ SearchBox.BorderSizePixel = 0
 local CloseBtn = Instance.new("TextButton", TitleBar)
 CloseBtn.Size = UDim2.new(0, 35, 1, 0)
 CloseBtn.Position = UDim2.new(1, -35, 0, 0)
-CloseBtn.Text = "X"
+CloseBtn.Text = "✕"
 CloseBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
 CloseBtn.TextColor3 = Color3.new(1, 1, 1)
-CloseBtn.BorderSizePixel = 0
 
 -- --- LOG SCROLL ---
 local LogScroll = Instance.new("ScrollingFrame", MainFrame)
@@ -59,8 +58,10 @@ LogScroll.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 LogScroll.BorderSizePixel = 0
 LogScroll.ScrollBarThickness = 8
 LogScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+LogScroll.AutomaticCanvasSize = Enum.AutomaticSize.XY -- Auto-resize canvas
 
 local UIListLayout = Instance.new("UIListLayout", LogScroll)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 2)
 
 -- --- BOTTOM BAR CONTROLS ---
@@ -70,7 +71,6 @@ ClearBtn.Position = UDim2.new(0, 10, 1, -35)
 ClearBtn.Text = "Clear"
 ClearBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
 ClearBtn.TextColor3 = Color3.new(1, 1, 1)
-ClearBtn.BorderSizePixel = 0
 
 local CopyBtn = Instance.new("TextButton", MainFrame)
 CopyBtn.Size = UDim2.new(0, 80, 0, 25)
@@ -78,41 +78,35 @@ CopyBtn.Position = UDim2.new(0, 100, 1, -35)
 CopyBtn.Text = "Copy All"
 CopyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 CopyBtn.TextColor3 = Color3.new(1, 1, 1)
-CopyBtn.BorderSizePixel = 0
 
--- Timestamp Toggle (Moved to Bottom Right)
 local TimeToggle = Instance.new("TextButton", MainFrame)
 TimeToggle.Size = UDim2.new(0, 100, 0, 25)
 TimeToggle.Position = UDim2.new(1, -110, 1, -35)
 TimeToggle.Text = "Time: ON"
 TimeToggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 TimeToggle.TextColor3 = Color3.new(1, 1, 1)
-TimeToggle.Font = Enum.Font.Gotham
-TimeToggle.TextSize = 12
-TimeToggle.BorderSizePixel = 0
 
--- --- GLOBAL DRAGGING ---
-local dragging = false
-local dragStart, startPos
+-- --- DRAGGING LOGIC ---
+local dragging, dragInput, dragStart, startPos
+local function update(input)
+	local delta = input.Position - dragStart
+	MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
 
 TitleBar.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		dragging = true
 		dragStart = input.Position
 		startPos = MainFrame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then dragging = false end
+		end)
 	end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
 	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		local delta = input.Position - dragStart
-		MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-	end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = false
+		update(input)
 	end
 end)
 
@@ -120,33 +114,41 @@ end)
 local showTimestamp = true
 local logs = {}
 
-local function updateLogVisibility()
+local function updateLogs()
 	local searchText = SearchBox.Text:lower()
 	for _, data in pairs(logs) do
 		local text = showTimestamp and (data.time .. data.msg) or data.msg
 		data.label.Text = text
-		data.label.Visible = (searchText == "" or string.find(text:lower(), searchText)) and true or false
+		data.label.Visible = (searchText == "" or string.find(text:lower(), searchText))
 	end
-	LogScroll.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
 end
 
 local function addLog(message, messageType)
 	local timestamp = "[" .. os.date("%X") .. "] "
 	local label = Instance.new("TextLabel", LogScroll)
-	label.Size = UDim2.new(1, -10, 0, 18)
+	label.Size = UDim2.new(1, -10, 0, 0) -- Width takes up frame, height starts at 0
+	label.AutomaticSize = Enum.AutomaticSize.Y -- CRITICAL: Prevents overlapping
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.Code
 	label.TextSize = 14
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.TextColor3 = Color3.fromRGB(220, 220, 220)
-	label.TextWrapped = true
+	label.TextWrapped = true -- Wrapped text is safer for console logs
 	
-	if messageType == Enum.MessageType.MessageError then label.TextColor3 = Color3.fromRGB(255, 80, 80)
-	elseif messageType == Enum.MessageType.MessageWarning then label.TextColor3 = Color3.fromRGB(255, 200, 80) end
+	if messageType == Enum.MessageType.MessageError then 
+		label.TextColor3 = Color3.fromRGB(255, 80, 80)
+	elseif messageType == Enum.MessageType.MessageWarning then 
+		label.TextColor3 = Color3.fromRGB(255, 200, 80) 
+	elseif messageType == Enum.MessageType.MessageInfo then
+		label.TextColor3 = Color3.fromRGB(80, 180, 255)
+	end
 	
 	table.insert(logs, {label = label, time = timestamp, msg = message})
-	updateLogVisibility()
-	LogScroll.CanvasPosition = Vector2.new(0, UIListLayout.AbsoluteContentSize.Y)
+	updateLogs()
+	
+	-- Auto-scroll to bottom
+	task.wait() -- Small wait for layout to update
+	LogScroll.CanvasPosition = Vector2.new(0, LogScroll.AbsoluteCanvasSize.Y)
 end
 
 LogService.MessageOut:Connect(addLog)
@@ -155,28 +157,23 @@ LogService.MessageOut:Connect(addLog)
 TimeToggle.MouseButton1Click:Connect(function()
 	showTimestamp = not showTimestamp
 	TimeToggle.Text = showTimestamp and "Time: ON" or "Time: OFF"
-	updateLogVisibility()
+	updateLogs()
 end)
 
-SearchBox:GetPropertyChangedSignal("Text"):Connect(updateLogVisibility)
+SearchBox:GetPropertyChangedSignal("Text"):Connect(updateLogs)
 
 CloseBtn.MouseButton1Click:Connect(function()
 	MainFrame.Visible = false
 	local rb = ScreenGui:FindFirstChild("Reopen") or Instance.new("TextButton", ScreenGui)
-	rb.Name = "Reopen"
-	rb.Size = UDim2.new(0, 120, 0, 30)
-	rb.Position = UDim2.new(0.5, -60, 0, 10)
-	rb.Text = "OPEN CONSOLE"
-	rb.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-	rb.TextColor3 = Color3.new(1, 1, 1)
+	rb.Name = "Reopen"; rb.Size = UDim2.new(0, 120, 0, 30); rb.Position = UDim2.new(0.5, -60, 0, 10)
+	rb.Text = "OPEN CONSOLE"; rb.BackgroundColor3 = Color3.fromRGB(45, 45, 45); rb.TextColor3 = Color3.new(1, 1, 1)
 	rb.Visible = true
-	rb.MouseButton1Click:Connect(function() MainFrame.Visible = true rb.Visible = false end)
+	rb.MouseButton1Click:Connect(function() MainFrame.Visible = true; rb.Visible = false end)
 end)
 
 ClearBtn.MouseButton1Click:Connect(function()
 	for _, v in pairs(logs) do v.label:Destroy() end
-	logs = {}
-	LogScroll.CanvasSize = UDim2.new(0,0,0,0)
+	logs = {}; updateLogs()
 end)
 
 CopyBtn.MouseButton1Click:Connect(function()

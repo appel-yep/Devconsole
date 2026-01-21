@@ -3,7 +3,6 @@ local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 
 local LocalPlayer = Players.LocalPlayer
-local PlayerName = LocalPlayer.Name
 
 -- Settings Variables
 local showTimestamp = true
@@ -140,8 +139,8 @@ end
 
 local function applyFilters(text)
     local processed = text
-    if filterUsername then
-        processed = string.gsub(processed, PlayerName, "(*Username*)")
+    if filterUsername and LocalPlayer then
+        processed = string.gsub(processed, LocalPlayer.Name, 'game:GetService("Players").LocalPlayer.Name')
     end
     return processed
 end
@@ -166,22 +165,33 @@ local function addLog(message, messageType)
 	btn.Font = Enum.Font.Code
 	btn.TextSize = 13
 	btn.TextXAlignment = Enum.TextXAlignment.Left
-	btn.TextColor3 = (messageType == "REMOTE") and Color3.fromRGB(0, 255, 255) or (messageType == Enum.MessageType.MessageError and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(220, 220, 220))
+    
+    -- COLOR LOGIC: Check for Remote, Error, and now Warning (Golden)
+    local defaultColor = Color3.fromRGB(220, 220, 220)
+    if messageType == "REMOTE" then
+        defaultColor = Color3.fromRGB(0, 255, 255)
+    elseif messageType == Enum.MessageType.MessageError then
+        defaultColor = Color3.fromRGB(255, 80, 80)
+    elseif messageType == Enum.MessageType.MessageWarning then
+        defaultColor = Color3.fromRGB(255, 215, 0) -- Golden Warning
+    end
+
+	btn.TextColor3 = defaultColor
 	btn.TextWrapped = true
     
     local finalMsg = showTimestamp and (timestamp .. cleanMsg) or cleanMsg
 	btn.Text = applyFilters(finalMsg)
 
-	table.insert(logs, {label = btn, time = timestamp, msg = cleanMsg})
+	table.insert(logs, {label = btn, time = timestamp, msg = cleanMsg, color = defaultColor})
     
 	local lastClick = 0
 	btn.MouseButton1Down:Connect(function()
 		local now = tick()
 		if now - lastClick < 0.4 and setclipboard then
-			setclipboard(cleanMsg)
+			setclipboard(applyFilters(cleanMsg))
 			btn.TextColor3 = Color3.new(0, 1, 0)
 			task.wait(0.2)
-			btn.TextColor3 = (messageType == "REMOTE") and Color3.fromRGB(0, 255, 255) or Color3.fromRGB(220, 220, 220)
+			btn.TextColor3 = defaultColor
 		end
 		lastClick = now
 	end)
@@ -241,7 +251,12 @@ CopyBtn.Font = Enum.Font.GothamBold
 CopyBtn.TextSize = 14
 CopyBtn.MouseButton1Click:Connect(function()
     local full = ""
-    for _, v in pairs(logs) do full = full .. v.label.Text .. "\n" end
+    for _, v in pairs(logs) do 
+        -- Only copy if the log is currently visible (not hidden by search)
+        if v.label.Visible then
+            full = full .. v.label.Text .. "\n" 
+        end
+    end
     if setclipboard then setclipboard(full) end
 end)
 

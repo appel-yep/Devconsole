@@ -4,19 +4,21 @@ local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local LocalPlayer = Players.LocalPlayer
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- Settings Variables
 local showTimestamp = false
 local remoteLoggingEnabled = true
 local proximityLoggingEnabled = false
 local filterUsername = false
+local uiclick = false
 local logs = {}
 
 -- Main UI Setup
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "DevConsole_V11_Final"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Parent = playerGui
 
 -- --- MAIN FRAME ---
 local MainFrame = Instance.new("Frame", ScreenGui)
@@ -65,7 +67,7 @@ CloseBtn.TextSize = 18
 
 -- --- SETTINGS MENU ---
 local SettingsFrame = Instance.new("Frame", MainFrame)
-SettingsFrame.Size = UDim2.new(0, 220, 1, -35)
+SettingsFrame.Size = UDim2.new(0, 240, 1, -35)
 SettingsFrame.Position = UDim2.new(1, 0, 0, 35)
 SettingsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 SettingsFrame.BorderSizePixel = 1
@@ -98,9 +100,11 @@ CloseSettingsBtn.Font = Enum.Font.GothamBold
 CloseSettingsBtn.TextSize = 24 
 CloseSettingsBtn.ZIndex = 52
 
-local SettingsList = Instance.new("UIListLayout", SettingsFrame)
-SettingsList.Padding = UDim.new(0, 12)
-SettingsList.SortOrder = Enum.SortOrder.LayoutOrder
+-- Swapped to UIGridLayout to place buttons in rows of 2
+local SettingsGrid = Instance.new("UIGridLayout", SettingsFrame)
+SettingsGrid.CellSize = UDim2.new(0, 105, 0, 40)
+SettingsGrid.CellPadding = UDim2.new(0, 10, 0, 10)
+SettingsGrid.SortOrder = Enum.SortOrder.LayoutOrder
 
 -- --- LOG SCROLL ---
 local LogScroll = Instance.new("ScrollingFrame", MainFrame)
@@ -121,6 +125,16 @@ UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 4)
 
 -- --- HELPER FUNCTIONS ---
+local function getFormattedPath(instance)
+	local parts = {}
+	local current = instance
+	while current and current ~= playerGui and current ~= game do
+		table.insert(parts, 1, current.Name)
+		current = current.Parent
+	end
+	return table.concat(parts, ".")
+end
+
 local function serializeTable(val, indent)
     indent = indent or 1
     local tabs = string.rep("\t", indent)
@@ -174,6 +188,8 @@ local function addLog(message, messageType)
         defaultColor = Color3.fromRGB(0, 255, 255)
     elseif messageType == "PROXIMITY" then
         defaultColor = Color3.fromRGB(255, 140, 0) -- Bright Orange
+    elseif messageType == "UICLICK" then
+        defaultColor = Color3.fromRGB(191, 64, 191) -- Purple
     elseif messageType == Enum.MessageType.MessageError then
         defaultColor = Color3.fromRGB(255, 80, 80)
     elseif messageType == Enum.MessageType.MessageWarning then
@@ -206,7 +222,7 @@ local function toggleSettings(state)
     if state == nil then state = not SettingsFrame.Visible end
     if state then
         SettingsFrame.Visible = true
-        SettingsFrame:TweenPosition(UDim2.new(1, -220, 0, 35), "Out", "Quad", 0.2, true)
+        SettingsFrame:TweenPosition(UDim2.new(1, -240, 0, 35), "Out", "Quad", 0.2, true)
     else
         SettingsFrame:TweenPosition(UDim2.new(1, 0, 0, 35), "In", "Quad", 0.2, true, function() SettingsFrame.Visible = false end)
     end
@@ -240,6 +256,18 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
         local logMsg = string.format("[PROXIMITY] Interacted with Prompt: %s", prompt:GetFullName())
         addLog(logMsg, "PROXIMITY")
     end
+end)
+
+-- --- UI CLICK DETECTOR ---
+UserInputService.InputBegan:Connect(function(input)
+	if uiclick and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+		for _, obj in ipairs(playerGui:GetGuiObjectsAtPosition(input.Position.X, input.Position.Y)) do
+			if obj:IsA("GuiButton") then
+				addLog("[UI CLICK] " .. getFormattedPath(obj), "UICLICK")
+				break
+			end
+		end
+	end
 end)
 
 -- --- BOTTOM BUTTONS ---
@@ -308,7 +336,7 @@ local function createToggle(text, default, callback)
     btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 13
+    btn.TextSize = 11 -- Adjusted text size slightly for narrower double-columns
     btn.BorderSizePixel = 0
     btn.ZIndex = 51
     
@@ -324,6 +352,7 @@ end
 createToggle("Show Time", false, function(s) showTimestamp = s; updateLogs() end)
 createToggle("Remote Spy", true, function(s) remoteLoggingEnabled = s end)
 createToggle("Proximity Logs", false, function(s) proximityLoggingEnabled = s end)
+createToggle("UI Click Logs", false, function(s) uiclick = s end)
 createToggle("Filter User", false, function(s) filterUsername = s; updateLogs() end)
 
 -- --- DRAGGING LOGIC ---

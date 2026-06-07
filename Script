@@ -350,8 +350,8 @@ local function createToggle(text, default, callback)
 end
 
 createToggle("Timestamp", false, function(s) showTimestamp = s; updateLogs() end)
-createToggle("Remote's", true, function(s) remoteLoggingEnabled = s end)
-createToggle("ProximityPrompt", false, function(s) proximityLoggingEnabled = s end)
+createToggle("Remotes log", true, function(s) remoteLoggingEnabled = s end)
+createToggle("Proximity log", false, function(s) proximityLoggingEnabled = s end)
 createToggle("UI Click", false, function(s) uiclick = s end)
 createToggle("Filter User", false, function(s) filterUsername = s; updateLogs() end)
 

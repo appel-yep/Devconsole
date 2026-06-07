@@ -6,7 +6,7 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 local LocalPlayer = Players.LocalPlayer
 
 -- Settings Variables
-local showTimestamp = true
+local showTimestamp = false
 local remoteLoggingEnabled = true
 local proximityLoggingEnabled = false
 local filterUsername = false
@@ -237,8 +237,7 @@ LogService.MessageOut:Connect(function(msg, msgType) addLog(msg, msgType) end)
 -- --- PROXIMITY PROMPT DETECTOR ---
 ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
     if proximityLoggingEnabled then
-        local parentName = prompt.Parent and prompt.Parent.Name or "Unknown"
-        local logMsg = string.format("[PROXIMITY] Interacted with Prompt: %s (Parent: %s)", prompt.Name, parentName)
+        local logMsg = string.format("[PROXIMITY] Interacted with Prompt: %s", prompt:GetFullName())
         addLog(logMsg, "PROXIMITY")
     end
 end)
@@ -273,6 +272,24 @@ CopyBtn.MouseButton1Click:Connect(function()
     if setclipboard then setclipboard(full) end
 end)
 
+local CoordsBtn = Instance.new("TextButton", MainFrame)
+CoordsBtn.Size = UDim2.new(0, 90, 0, 30)
+CoordsBtn.Position = UDim2.new(0, 210, 1, -40)
+CoordsBtn.Text = "Coords"
+CoordsBtn.BackgroundColor3 = Color3.fromRGB(45, 85, 45)
+CoordsBtn.TextColor3 = Color3.new(1, 1, 1)
+CoordsBtn.Font = Enum.Font.GothamBold
+CoordsBtn.TextSize = 14
+CoordsBtn.MouseButton1Click:Connect(function()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local cf = LocalPlayer.Character.HumanoidRootPart.CFrame
+        local formattedCoords = tostring(cf)
+        addLog("[COORDINATES] " .. formattedCoords, Enum.MessageType.MessageInfo)
+    else
+        addLog("[COORDINATES] Character position could not be found.", Enum.MessageType.MessageWarning)
+    end
+end)
+
 local SettingsBtn = Instance.new("TextButton", MainFrame)
 SettingsBtn.Size = UDim2.new(0, 110, 0, 30)
 SettingsBtn.Position = UDim2.new(1, -120, 1, -40)
@@ -304,7 +321,7 @@ local function createToggle(text, default, callback)
     return btn
 end
 
-createToggle("Show Time", true, function(s) showTimestamp = s; updateLogs() end)
+createToggle("Show Time", false, function(s) showTimestamp = s; updateLogs() end)
 createToggle("Remote Spy", true, function(s) remoteLoggingEnabled = s end)
 createToggle("Proximity Logs", false, function(s) proximityLoggingEnabled = s end)
 createToggle("Filter User", false, function(s) filterUsername = s; updateLogs() end)

@@ -1,12 +1,14 @@
 local LogService = game:GetService("LogService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local LocalPlayer = Players.LocalPlayer
 
 -- Settings Variables
 local showTimestamp = true
 local remoteLoggingEnabled = true
+local proximityLoggingEnabled = false
 local filterUsername = false
 local logs = {}
 
@@ -166,10 +168,12 @@ local function addLog(message, messageType)
 	btn.TextSize = 13
 	btn.TextXAlignment = Enum.TextXAlignment.Left
     
-    -- COLOR LOGIC: Check for Remote, Error, and now Warning (Golden)
+    -- COLOR LOGIC: Check for Remote, Error, Warning, and Proximity Prompt
     local defaultColor = Color3.fromRGB(220, 220, 220)
     if messageType == "REMOTE" then
         defaultColor = Color3.fromRGB(0, 255, 255)
+    elseif messageType == "PROXIMITY" then
+        defaultColor = Color3.fromRGB(255, 140, 0) -- Bright Orange
     elseif messageType == Enum.MessageType.MessageError then
         defaultColor = Color3.fromRGB(255, 80, 80)
     elseif messageType == Enum.MessageType.MessageWarning then
@@ -229,6 +233,15 @@ if hookmetamethod then
 end
 
 LogService.MessageOut:Connect(function(msg, msgType) addLog(msg, msgType) end)
+
+-- --- PROXIMITY PROMPT DETECTOR ---
+ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
+    if proximityLoggingEnabled then
+        local parentName = prompt.Parent and prompt.Parent.Name or "Unknown"
+        local logMsg = string.format("[PROXIMITY] Interacted with Prompt: %s (Parent: %s)", prompt.Name, parentName)
+        addLog(logMsg, "PROXIMITY")
+    end
+end)
 
 -- --- BOTTOM BUTTONS ---
 local ClearBtn = Instance.new("TextButton", MainFrame)
@@ -293,6 +306,7 @@ end
 
 createToggle("Show Time", true, function(s) showTimestamp = s; updateLogs() end)
 createToggle("Remote Spy", true, function(s) remoteLoggingEnabled = s end)
+createToggle("Proximity Logs", false, function(s) proximityLoggingEnabled = s end)
 createToggle("Filter User", false, function(s) filterUsername = s; updateLogs() end)
 
 -- --- DRAGGING LOGIC ---

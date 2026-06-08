@@ -6,6 +6,9 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 local LocalPlayer = Players.LocalPlayer
 local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 
+local existing = playerGui:FindFirstChild("devconsole")
+if existing then existing:Destroy() end
+
 -- Settings Variables
 local showTimestamp = false
 local remoteLoggingEnabled = true
@@ -14,115 +17,174 @@ local filterUsername = false
 local uiclick = false
 local logs = {}
 
+-- Modern Color Palette
+local Theme = {
+	Background = Color3.fromRGB(24, 24, 28),
+	Panel = Color3.fromRGB(32, 32, 38),
+	TopBar = Color3.fromRGB(18, 18, 22),
+	Accent = Color3.fromRGB(88, 101, 242),
+	TextMain = Color3.fromRGB(240, 240, 245),
+	TextMuted = Color3.fromRGB(150, 150, 160),
+	Danger = Color3.fromRGB(237, 66, 69),
+	Success = Color3.fromRGB(87, 242, 135)
+}
+
 -- Main UI Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DevConsole_V11_Final"
+ScreenGui.Name = "devconsole"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = playerGui
 
 -- --- MAIN FRAME ---
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 550, 0, 350)
-MainFrame.Position = UDim2.new(0.5, -275, 0.4, -175)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.Size = UDim2.new(0, 600, 0, 380)
+MainFrame.Position = UDim2.new(0.5, -300, 0.4, -190)
+MainFrame.BackgroundColor3 = Theme.Background
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true 
 MainFrame.ClipsDescendants = true
 
+local MainCorner = Instance.new("UICorner", MainFrame)
+MainCorner.CornerRadius = UDim.new(0, 8)
+
 -- --- TITLE BAR ---
 local TitleBar = Instance.new("Frame", MainFrame)
-TitleBar.Size = UDim2.new(1, 0, 0, 35)
-TitleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+TitleBar.Size = UDim2.new(1, 0, 0, 45)
+TitleBar.BackgroundColor3 = Theme.TopBar
 TitleBar.BorderSizePixel = 0
+
+local TitleBarCorner = Instance.new("UICorner", TitleBar)
+TitleBarCorner.CornerRadius = UDim.new(0, 8)
+
+-- Cover bottom corners of title bar
+local TitleBarFix = Instance.new("Frame", TitleBar)
+TitleBarFix.Size = UDim2.new(1, 0, 0, 10)
+TitleBarFix.Position = UDim2.new(0, 0, 1, -10)
+TitleBarFix.BackgroundColor3 = Theme.TopBar
+TitleBarFix.BorderSizePixel = 0
 
 local TitleText = Instance.new("TextLabel", TitleBar)
 TitleText.Size = UDim2.new(0, 160, 1, 0)
-TitleText.Position = UDim2.new(0, 10, 0, 0)
+TitleText.Position = UDim2.new(0, 15, 0, 0)
 TitleText.Text = "DEV CONSOLE+"
 TitleText.Font = Enum.Font.GothamBold
-TitleText.TextSize = 16 
-TitleText.TextColor3 = Color3.new(1, 1, 1)
+TitleText.TextSize = 14 
+TitleText.TextColor3 = Theme.TextMain
 TitleText.BackgroundTransparency = 1
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
 
 local SearchBox = Instance.new("TextBox", TitleBar)
-SearchBox.Size = UDim2.new(0, 160, 0, 26)
-SearchBox.Position = UDim2.new(1, -210, 0.5, -13)
-SearchBox.PlaceholderText = "Search..."
+SearchBox.Size = UDim2.new(0, 180, 0, 28)
+SearchBox.Position = UDim2.new(1, -240, 0.5, -14)
+SearchBox.PlaceholderText = "Search logs..."
 SearchBox.Text = ""
-SearchBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-SearchBox.TextColor3 = Color3.new(1, 1, 1)
-SearchBox.Font = Enum.Font.GothamBold
-SearchBox.TextSize = 14 
+SearchBox.BackgroundColor3 = Theme.Panel
+SearchBox.TextColor3 = Theme.TextMain
+SearchBox.PlaceholderColor3 = Theme.TextMuted
+SearchBox.Font = Enum.Font.Gotham
+SearchBox.TextSize = 13 
 SearchBox.BorderSizePixel = 0
 
+local SearchCorner = Instance.new("UICorner", SearchBox)
+SearchCorner.CornerRadius = UDim.new(0, 6)
+local SearchPadding = Instance.new("UIPadding", SearchBox)
+SearchPadding.PaddingLeft = UDim.new(0, 8)
+
 local CloseBtn = Instance.new("TextButton", TitleBar)
-CloseBtn.Size = UDim2.new(0, 40, 1, 0)
-CloseBtn.Position = UDim2.new(1, -40, 0, 0)
-CloseBtn.Text = "X"
-CloseBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-CloseBtn.TextColor3 = Color3.new(1, 1, 1)
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -40, 0.5, -15)
+CloseBtn.Text = "×"
+CloseBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+CloseBtn.TextColor3 = Theme.TextMuted
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 18
+CloseBtn.TextSize = 22
+CloseBtn.BorderSizePixel = 0
+
+local CloseCorner = Instance.new("UICorner", CloseBtn)
+CloseCorner.CornerRadius = UDim.new(0, 6)
 
 -- --- SETTINGS MENU ---
 local SettingsFrame = Instance.new("Frame", MainFrame)
-SettingsFrame.Size = UDim2.new(0, 240, 1, -35)
-SettingsFrame.Position = UDim2.new(1, 0, 0, 35)
-SettingsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-SettingsFrame.BorderSizePixel = 1
-SettingsFrame.BorderColor3 = Color3.fromRGB(60, 60, 60)
+SettingsFrame.Size = UDim2.new(1, 0, 1, -45)
+SettingsFrame.Position = UDim2.new(0, 0, 0, 45)
+SettingsFrame.BackgroundColor3 = Theme.Panel
+SettingsFrame.BorderSizePixel = 0
 SettingsFrame.ZIndex = 50 
 SettingsFrame.Visible = false
 
-local SettingsPadding = Instance.new("UIPadding", SettingsFrame)
-SettingsPadding.PaddingTop = UDim.new(0, 10)
-SettingsPadding.PaddingLeft = UDim.new(0, 10)
-SettingsPadding.PaddingRight = UDim.new(0, 10)
+local SettingsHeader = Instance.new("Frame", SettingsFrame)
+SettingsHeader.Size = UDim2.new(1, 0, 0, 40)
+SettingsHeader.BackgroundTransparency = 1
+SettingsHeader.ZIndex = 51
 
-local SettingsTitle = Instance.new("TextLabel", SettingsFrame)
-SettingsTitle.Size = UDim2.new(1, -40, 0, 30)
+local SettingsTitle = Instance.new("TextLabel", SettingsHeader)
+SettingsTitle.Size = UDim2.new(1, -50, 1, 0)
+SettingsTitle.Position = UDim2.new(0, 15, 0, 0)
 SettingsTitle.Text = "SETTINGS"
-SettingsTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+SettingsTitle.TextColor3 = Theme.TextMain
 SettingsTitle.BackgroundTransparency = 1
 SettingsTitle.Font = Enum.Font.GothamBold
-SettingsTitle.TextSize = 16
+SettingsTitle.TextSize = 13
 SettingsTitle.TextXAlignment = Enum.TextXAlignment.Left
-SettingsTitle.ZIndex = 51
+SettingsTitle.ZIndex = 52
 
-local CloseSettingsBtn = Instance.new("TextButton", SettingsFrame)
-CloseSettingsBtn.Size = UDim2.new(0, 35, 0, 35)
-CloseSettingsBtn.Position = UDim2.new(1, -35, 0, -5)
-CloseSettingsBtn.Text = "»"
-CloseSettingsBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-CloseSettingsBtn.TextColor3 = Color3.new(1, 1, 1)
+local CloseSettingsBtn = Instance.new("TextButton", SettingsHeader)
+CloseSettingsBtn.Size = UDim2.new(0, 65, 0, 24)
+CloseSettingsBtn.Position = UDim2.new(1, -80, 0.5, -12)
+CloseSettingsBtn.Text = "Back"
+CloseSettingsBtn.BackgroundColor3 = Theme.Background
+CloseSettingsBtn.TextColor3 = Theme.TextMain
 CloseSettingsBtn.Font = Enum.Font.GothamBold
-CloseSettingsBtn.TextSize = 24 
+CloseSettingsBtn.TextSize = 11
 CloseSettingsBtn.ZIndex = 52
+CloseSettingsBtn.BorderSizePixel = 0
+Instance.new("UICorner", CloseSettingsBtn).CornerRadius = UDim.new(0, 4)
 
--- Swapped to UIGridLayout to place buttons in rows of 2
-local SettingsGrid = Instance.new("UIGridLayout", SettingsFrame)
-SettingsGrid.CellSize = UDim2.new(0, 105, 0, 40)
-SettingsGrid.CellPadding = UDim2.new(0, 10, 0, 10)
-SettingsGrid.SortOrder = Enum.SortOrder.LayoutOrder
+local SettingsScroll = Instance.new("ScrollingFrame", SettingsFrame)
+SettingsScroll.Size = UDim2.new(1, 0, 1, -40)
+SettingsScroll.Position = UDim2.new(0, 0, 0, 40)
+SettingsScroll.BackgroundTransparency = 1
+SettingsScroll.BorderSizePixel = 0
+SettingsScroll.ScrollBarThickness = 4
+SettingsScroll.ScrollBarImageColor3 = Theme.TextMuted
+SettingsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+SettingsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+SettingsScroll.ZIndex = 51
+
+local SettingsScrollList = Instance.new("UIListLayout", SettingsScroll)
+SettingsScrollList.SortOrder = Enum.SortOrder.LayoutOrder
+SettingsScrollList.Padding = UDim.new(0, 8)
+
+local SettingsPadding = Instance.new("UIPadding", SettingsScroll)
+SettingsPadding.PaddingTop = UDim.new(0, 5)
+SettingsPadding.PaddingLeft = UDim.new(0, 15)
+SettingsPadding.PaddingRight = UDim.new(0, 15)
+SettingsPadding.PaddingBottom = UDim.new(0, 15)
 
 -- --- LOG SCROLL ---
 local LogScroll = Instance.new("ScrollingFrame", MainFrame)
-LogScroll.Size = UDim2.new(1, -10, 1, -85)
-LogScroll.Position = UDim2.new(0, 5, 0, 40)
-LogScroll.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+LogScroll.Size = UDim2.new(1, -20, 1, -110)
+LogScroll.Position = UDim2.new(0, 10, 0, 55)
+LogScroll.BackgroundColor3 = Theme.TopBar
 LogScroll.BorderSizePixel = 0
-LogScroll.ScrollBarThickness = 8
+LogScroll.ScrollBarThickness = 6
+LogScroll.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 70)
 LogScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 LogScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y 
 LogScroll.ZIndex = 1
 
+local LogScrollCorner = Instance.new("UICorner", LogScroll)
+LogScrollCorner.CornerRadius = UDim.new(0, 6)
+
 local LogPadding = Instance.new("UIPadding", LogScroll)
-LogPadding.PaddingLeft = UDim.new(0, 8) 
+LogPadding.PaddingLeft = UDim.new(0, 10) 
+LogPadding.PaddingRight = UDim.new(0, 10) 
+LogPadding.PaddingTop = UDim.new(0, 8) 
+LogPadding.PaddingBottom = UDim.new(0, 8) 
 
 local UIListLayout = Instance.new("UIListLayout", LogScroll)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 4)
+UIListLayout.Padding = UDim.new(0, 5)
 
 -- --- HELPER FUNCTIONS ---
 local function getFormattedPath(instance)
@@ -136,36 +198,36 @@ local function getFormattedPath(instance)
 end
 
 local function serializeTable(val, indent)
-    indent = indent or 1
-    local tabs = string.rep("\t", indent)
-    local prevTabs = string.rep("\t", indent - 1)
-    if type(val) == "table" then
-        local res = "{\n"
-        local keys = {}
-        for k in pairs(val) do table.insert(keys, k) end
-        for i, k in ipairs(keys) do
-            local keyStr = (type(k) == "string") and k .. " = " or (type(k) == "number" and k ~= i and "[" .. tostring(k) .. "] = " or "")
-            res = res .. tabs .. keyStr .. serializeTable(val[k], indent + 1) .. (i == #keys and "" or ",") .. "\n"
-        end
-        return res .. prevTabs .. "}"
-    elseif type(val) == "string" then return '"' .. val .. '"'
-    elseif type(val) == "Instance" then return "game." .. val:GetFullName()
-    else return tostring(val) end
+	indent = indent or 1
+	local tabs = string.rep("\t", indent)
+	local prevTabs = string.rep("\t", indent - 1)
+	if type(val) == "table" then
+		local res = "{\n"
+		local keys = {}
+		for k in pairs(val) do table.insert(keys, k) end
+		for i, k in ipairs(keys) do
+			local keyStr = (type(k) == "string") and k .. " = " or (type(k) == "number" and k ~= i and "[" .. tostring(k) .. "] = " or "")
+			res = res .. tabs .. keyStr .. serializeTable(val[k], indent + 1) .. (i == #keys and "" or ",") .. "\n"
+		end
+		return res .. prevTabs .. "}"
+	elseif type(val) == "string" then return '"' .. val .. '"'
+	elseif type(val) == "Instance" then return "game." .. val:GetFullName()
+	else return tostring(val) end
 end
 
 local function applyFilters(text)
-    local processed = text
-    if filterUsername and LocalPlayer then
-        processed = string.gsub(processed, LocalPlayer.Name, 'game:GetService("Players").LocalPlayer.Name')
-    end
-    return processed
+	local processed = text
+	if filterUsername and LocalPlayer then
+		processed = string.gsub(processed, LocalPlayer.Name, 'game:GetService("Players").LocalPlayer.Name')
+	end
+	return processed
 end
 
 local function updateLogs()
 	local searchText = SearchBox.Text:lower()
 	for _, data in pairs(logs) do
 		local text = showTimestamp and (data.time .. data.msg) or data.msg
-        local filteredText = applyFilters(text)
+		local filteredText = applyFilters(text)
 		data.label.Text = filteredText
 		data.label.Visible = (searchText == "" or string.find(filteredText:lower(), searchText))
 	end
@@ -175,41 +237,41 @@ local function addLog(message, messageType)
 	local timestamp = "[" .. os.date("%X") .. "] "
 	local cleanMsg = tostring(message)
 	local btn = Instance.new("TextButton", LogScroll)
-	btn.Size = UDim2.new(1, -15, 0, 20)
+	btn.Size = UDim2.new(1, 0, 0, 20)
 	btn.AutomaticSize = Enum.AutomaticSize.Y
 	btn.BackgroundTransparency = 1
 	btn.Font = Enum.Font.Code
-	btn.TextSize = 13
+	btn.TextSize = 12
 	btn.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- COLOR LOGIC: Check for Remote, Error, Warning, and Proximity Prompt
-    local defaultColor = Color3.fromRGB(220, 220, 220)
-    if messageType == "REMOTE" then
-        defaultColor = Color3.fromRGB(0, 255, 255)
-    elseif messageType == "PROXIMITY" then
-        defaultColor = Color3.fromRGB(255, 140, 0) -- Bright Orange
-    elseif messageType == "UICLICK" then
-        defaultColor = Color3.fromRGB(191, 64, 191) -- Purple
-    elseif messageType == Enum.MessageType.MessageError then
-        defaultColor = Color3.fromRGB(255, 80, 80)
-    elseif messageType == Enum.MessageType.MessageWarning then
-        defaultColor = Color3.fromRGB(255, 215, 0) -- Golden Warning
-    end
+	
+	-- COLOR LOGIC
+	local defaultColor = Color3.fromRGB(220, 220, 225)
+	if messageType == "REMOTE" then
+		defaultColor = Color3.fromRGB(52, 152, 219) -- Crisp Electric Blue
+	elseif messageType == "PROXIMITY" then
+		defaultColor = Color3.fromRGB(230, 126, 34) -- Beautiful Orange
+	elseif messageType == "UICLICK" then
+		defaultColor = Color3.fromRGB(155, 89, 182) -- Smooth Purple
+	elseif messageType == Enum.MessageType.MessageError then
+		defaultColor = Theme.Danger
+	elseif messageType == Enum.MessageType.MessageWarning then
+		defaultColor = Color3.fromRGB(241, 196, 15) -- Clear Yellow
+	end
 
 	btn.TextColor3 = defaultColor
 	btn.TextWrapped = true
-    
-    local finalMsg = showTimestamp and (timestamp .. cleanMsg) or cleanMsg
+	
+	local finalMsg = showTimestamp and (timestamp .. cleanMsg) or cleanMsg
 	btn.Text = applyFilters(finalMsg)
 
 	table.insert(logs, {label = btn, time = timestamp, msg = cleanMsg, color = defaultColor})
-    
+	
 	local lastClick = 0
 	btn.MouseButton1Down:Connect(function()
 		local now = tick()
 		if now - lastClick < 0.4 and setclipboard then
 			setclipboard(applyFilters(cleanMsg))
-			btn.TextColor3 = Color3.new(0, 1, 0)
+			btn.TextColor3 = Theme.Success
 			task.wait(0.2)
 			btn.TextColor3 = defaultColor
 		end
@@ -219,13 +281,8 @@ end
 
 -- --- SETTINGS TOGGLE ---
 local function toggleSettings(state)
-    if state == nil then state = not SettingsFrame.Visible end
-    if state then
-        SettingsFrame.Visible = true
-        SettingsFrame:TweenPosition(UDim2.new(1, -240, 0, 35), "Out", "Quad", 0.2, true)
-    else
-        SettingsFrame:TweenPosition(UDim2.new(1, 0, 0, 35), "In", "Quad", 0.2, true, function() SettingsFrame.Visible = false end)
-    end
+	if state == nil then state = not SettingsFrame.Visible end
+	SettingsFrame.Visible = state
 end
 
 CloseSettingsBtn.MouseButton1Click:Connect(function() toggleSettings(false) end)
@@ -252,10 +309,10 @@ LogService.MessageOut:Connect(function(msg, msgType) addLog(msg, msgType) end)
 
 -- --- PROXIMITY PROMPT DETECTOR ---
 ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
-    if proximityLoggingEnabled then
-        local logMsg = string.format("[PROXIMITY] Interacted with Prompt: %s", prompt:GetFullName())
-        addLog(logMsg, "PROXIMITY")
-    end
+	if proximityLoggingEnabled then
+		local logMsg = string.format("[PROXIMITY] Interacted with Prompt: %s", prompt:GetFullName())
+		addLog(logMsg, "PROXIMITY")
+	end
 end)
 
 -- --- UI CLICK DETECTOR ---
@@ -270,89 +327,118 @@ UserInputService.InputBegan:Connect(function(input)
 	end
 end)
 
--- --- BOTTOM BUTTONS ---
-local ClearBtn = Instance.new("TextButton", MainFrame)
-ClearBtn.Size = UDim2.new(0, 90, 0, 30)
-ClearBtn.Position = UDim2.new(0, 10, 1, -40)
-ClearBtn.Text = "Clear"
-ClearBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
-ClearBtn.TextColor3 = Color3.new(1, 1, 1)
-ClearBtn.Font = Enum.Font.GothamBold
-ClearBtn.TextSize = 14
+-- --- BOTTOM BUTTONS CONTAINER ---
+local ButtonContainer = Instance.new("Frame", MainFrame)
+-- Shrunk container width to stop it from running under the isolated Settings button
+ButtonContainer.Size = UDim2.new(1, -125, 0, 32)
+ButtonContainer.Position = UDim2.new(0, 10, 1, -42)
+ButtonContainer.BackgroundTransparency = 1
+
+local ButtonLayout = Instance.new("UIListLayout", ButtonContainer)
+ButtonLayout.FillDirection = Enum.FillDirection.Horizontal
+ButtonLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ButtonLayout.Padding = UDim.new(0, 8)
+
+local function createBottomButton(text, color, layoutOrder)
+	local btn = Instance.new("TextButton", ButtonContainer)
+	btn.Size = UDim2.new(0, 95, 1, 0)
+	btn.Text = text
+	btn.BackgroundColor3 = color
+	btn.TextColor3 = Theme.TextMain
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 12
+	btn.BorderSizePixel = 0
+	btn.LayoutOrder = layoutOrder
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
+	return btn
+end
+
+local ClearBtn = createBottomButton("Clear", Color3.fromRGB(180, 60, 60), 1)
 ClearBtn.MouseButton1Click:Connect(function() for _, v in pairs(logs) do v.label:Destroy() end; table.clear(logs) end)
 
-local CopyBtn = Instance.new("TextButton", MainFrame)
-CopyBtn.Size = UDim2.new(0, 90, 0, 30)
-CopyBtn.Position = UDim2.new(0, 110, 1, -40)
-CopyBtn.Text = "Copy All"
-CopyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-CopyBtn.TextColor3 = Color3.new(1, 1, 1)
-CopyBtn.Font = Enum.Font.GothamBold
-CopyBtn.TextSize = 14
+local CopyBtn = createBottomButton("Copy All", Theme.Panel, 2)
 CopyBtn.MouseButton1Click:Connect(function()
-    local full = ""
-    for _, v in pairs(logs) do 
-        -- Only copy if the log is currently visible (not hidden by search)
-        if v.label.Visible then
-            full = full .. v.label.Text .. "\n" 
-        end
-    end
-    if setclipboard then setclipboard(full) end
+	local full = ""
+	for _, v in pairs(logs) do 
+		if v.label.Visible then
+			full = full .. v.label.Text .. "\n" 
+		end
+	end
+	if setclipboard then setclipboard(full) end
 end)
 
-local CoordsBtn = Instance.new("TextButton", MainFrame)
-CoordsBtn.Size = UDim2.new(0, 90, 0, 30)
-CoordsBtn.Position = UDim2.new(0, 210, 1, -40)
-CoordsBtn.Text = "Coords"
-CoordsBtn.BackgroundColor3 = Color3.fromRGB(45, 85, 45)
-CoordsBtn.TextColor3 = Color3.new(1, 1, 1)
-CoordsBtn.Font = Enum.Font.GothamBold
-CoordsBtn.TextSize = 14
+local CoordsBtn = createBottomButton("Coords", Color3.fromRGB(46, 125, 50), 3)
 CoordsBtn.MouseButton1Click:Connect(function()
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local cf = LocalPlayer.Character.HumanoidRootPart.CFrame
-        local formattedCoords = tostring(cf)
-        addLog("[COORDINATES] " .. formattedCoords, Enum.MessageType.MessageInfo)
-    else
-        addLog("[COORDINATES] Character position could not be found.", Enum.MessageType.MessageWarning)
-    end
+	if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		local cf = LocalPlayer.Character.HumanoidRootPart.CFrame
+		local formattedCoords = tostring(cf)
+		addLog("[COORDINATES] " .. formattedCoords, Enum.MessageType.MessageInfo)
+	else
+		addLog("[COORDINATES] Character position could not be found.", Enum.MessageType.MessageWarning)
+	end
 end)
 
 local SettingsBtn = Instance.new("TextButton", MainFrame)
-SettingsBtn.Size = UDim2.new(0, 110, 0, 30)
-SettingsBtn.Position = UDim2.new(1, -120, 1, -40)
+SettingsBtn.Size = UDim2.new(0, 95, 0, 32)
+SettingsBtn.Position = UDim2.new(1, -105, 1, -42)
 SettingsBtn.Text = "Settings"
-SettingsBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-SettingsBtn.TextColor3 = Color3.new(1, 1, 1)
+SettingsBtn.BackgroundColor3 = Theme.Accent
+SettingsBtn.TextColor3 = Theme.TextMain
 SettingsBtn.Font = Enum.Font.GothamBold
-SettingsBtn.TextSize = 14
+SettingsBtn.TextSize = 12
+SettingsBtn.BorderSizePixel = 0
+Instance.new("UICorner", SettingsBtn).CornerRadius = UDim.new(0, 5)
 SettingsBtn.MouseButton1Click:Connect(function() toggleSettings(true) end)
 
--- --- SETTINGS ITEMS ---
+-- --- MODERN SETTINGS ROW GENERATOR ---
 local function createToggle(text, default, callback)
-    local btn = Instance.new("TextButton", SettingsFrame)
-    btn.Size = UDim2.new(1, 0, 0, 40)
-    btn.Text = text .. (default and ": ON" or ": OFF")
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 11 -- Adjusted text size slightly for narrower double-columns
-    btn.BorderSizePixel = 0
-    btn.ZIndex = 51
-    
-    local state = default
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        btn.Text = text .. (state and ": ON" or ": OFF")
-        callback(state)
-    end)
-    return btn
+	local rowFrame = Instance.new("Frame", SettingsScroll)
+	rowFrame.Size = UDim2.new(1, 0, 0, 38)
+	rowFrame.BackgroundColor3 = Theme.Background
+	rowFrame.BorderSizePixel = 0
+	Instance.new("UICorner", rowFrame).CornerRadius = UDim.new(0, 6)
+	
+	local rowPadding = Instance.new("UIPadding", rowFrame)
+	rowPadding.PaddingLeft = UDim.new(0, 10)
+	rowPadding.PaddingRight = UDim.new(0, 10)
+
+	local label = Instance.new("TextLabel", rowFrame)
+	label.Size = UDim2.new(0, 140, 1, 0)
+	label.Text = text
+	label.TextColor3 = Theme.TextMain
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.GothamMedium
+	label.TextSize = 12
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.ZIndex = 52
+
+	local btn = Instance.new("TextButton", rowFrame)
+	btn.Size = UDim2.new(0, 65, 0, 24)
+	btn.Position = UDim2.new(1, -65, 0.5, -12)
+	btn.Text = default and "ON" or "OFF"
+	btn.BackgroundColor3 = default and Theme.Success or Theme.Panel
+	btn.TextColor3 = default and Theme.TopBar or Theme.TextMuted
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 11
+	btn.BorderSizePixel = 0
+	btn.ZIndex = 52
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+	
+	local state = default
+	btn.MouseButton1Click:Connect(function()
+		state = not state
+		btn.Text = state and "ON" or "OFF"
+		btn.BackgroundColor3 = state and Theme.Success or Theme.Panel
+		btn.TextColor3 = state and Theme.TopBar or Theme.TextMuted
+		callback(state)
+	end)
+	return rowFrame
 end
 
-createToggle("Timestamp", false, function(s) showTimestamp = s; updateLogs() end)
-createToggle("Remotes log", true, function(s) remoteLoggingEnabled = s end)
-createToggle("Proximity log", false, function(s) proximityLoggingEnabled = s end)
-createToggle("UI Click", false, function(s) uiclick = s end)
+createToggle("Show Timestamp", false, function(s) showTimestamp = s; updateLogs() end)
+createToggle("Remote event's Log", true, function(s) remoteLoggingEnabled = s end)
+createToggle("ProximityPrompt's Log", false, function(s) proximityLoggingEnabled = s end)
+createToggle("UI Click's Log", false, function(s) uiclick = s end)
 createToggle("Filter User", false, function(s) filterUsername = s; updateLogs() end)
 
 -- --- DRAGGING LOGIC ---
@@ -383,17 +469,24 @@ end)
 CloseBtn.MouseButton1Click:Connect(function()
 	MainFrame.Visible = false
 	local rb = ScreenGui:FindFirstChild("Reopen") or Instance.new("TextButton", ScreenGui)
-	rb.Name = "Reopen"; rb.Size = UDim2.new(0, 140, 0, 35); rb.Position = UDim2.new(0.5, -70, 0, 10)
-	rb.Text = "OPEN CONSOLE"; rb.BackgroundColor3 = Color3.fromRGB(45, 45, 45); rb.TextColor3 = Color3.new(1, 1, 1); rb.Font = Enum.Font.GothamBold; rb.TextSize = 14
+	rb.Name = "Reopen"; rb.Size = UDim2.new(0, 150, 0, 38); rb.Position = UDim2.new(0.5, -75, 0, 15)
+	rb.Text = "OPEN CONSOLE"
+	rb.BackgroundColor3 = Theme.TopBar
+	rb.TextColor3 = Theme.TextMain
+	rb.Font = Enum.Font.GothamBold
+	rb.TextSize = 12
+	rb.BorderSizePixel = 0
+	Instance.new("UICorner", rb).CornerRadius = UDim.new(0, 6)
+	
 	rb.Visible = true
 	rb.MouseButton1Click:Connect(function() MainFrame.Visible = true; rb.Visible = false end)
 end)
 
 -- --- CLOSE ON CLICK AWAY ---
 MainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and SettingsFrame.Visible then
-        if input.Position.X < SettingsFrame.AbsolutePosition.X then toggleSettings(false) end
-    end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 and SettingsFrame.Visible then
+		if input.Position.X < SettingsFrame.AbsolutePosition.X then toggleSettings(false) end
+	end
 end)
 
 SearchBox:GetPropertyChangedSignal("Text"):Connect(updateLogs)

@@ -404,7 +404,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
         local mouse = LocalPlayer:GetMouse()
         local target = mouse.Target
         if target and target:IsA("BasePart") then
-            local logMsg = string.format("-- PART-PATH\n%s", target:GetFullName())
+            local logMsg = string.format("-- PART\n%s", target:GetFullName())
             addLog(logMsg, "SELECT")
             task.spawn(function()
                 local highlight = Instance.new("Highlight")

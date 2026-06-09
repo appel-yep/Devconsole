@@ -288,7 +288,11 @@ local function addLog(message, messageType)
     table.insert(logs, {label = btn, time = timestamp, msg = cleanMsg, color = defaultColor})
 
     if autoCopyEnabled and setclipboard then
-        setclipboard(filteredFinal)
+        local full = ""
+        for _, v in pairs(logs) do
+            if v.label.Visible then full = full .. v.label.Text .. "\n" end
+        end
+        setclipboard(full)
     end
 
     local lastClick = 0
@@ -327,7 +331,7 @@ if hookmetamethod then
                 for i = 2, #pathParts do
                     formattedPath = formattedPath .. ':WaitForChild("' .. pathParts[i] .. '")'
                 end
-                addLog(string.format("-- REMOTE EVENT\nlocal args = %s\n%s:%s(unpack(args))", serializeTable(args), formattedPath, method), "REMOTE")
+                addLog(string.format("-- REMOTE EVENT\nPath: %s\nMethod: %s\nArgs: %s", formattedPath, method, serializeTable(args)), "REMOTE")
             end)
         end
         return oldNamecall(self, ...)
@@ -347,17 +351,36 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
 end)
 
 -- --- UI CLICK DETECTOR ---
-UserInputService.InputBegan:Connect(function(input)
-    if uiclick and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-        for _, obj in ipairs(playerGui:GetGuiObjectsAtPosition(input.Position.X, input.Position.Y)) do
-            if obj:IsA("GuiButton") then
-                local logMsg = string.format("-- GUI INTERACTION\n %s", getFormattedPath(obj))
-                addLog(logMsg, "UICLICK")
-                break
-            end
-        end
+local function getFullPath(instance)
+    local path = instance.Name
+    local current = instance.Parent
+    while current and current ~= game do
+        path = current.Name .. "." .. path
+        current = current.Parent
     end
-end)
+    return "game." .. path
+end
+
+local function setupButtonListener(element)
+    if element:IsA("GuiButton") then
+        element.MouseButton1Click:Connect(function()
+            if uiclick then
+                local logMsg = string.format("-- GUI INTERACTION\nButton Name: %s\nFull Path: %s\nAbsolutePos: %s\nAbsoluteSize: %s", 
+                    element.Name, 
+                    getFullPath(element), 
+                    tostring(element.AbsolutePosition), 
+                    tostring(element.AbsoluteSize)
+                )
+                addLog(logMsg, "UICLICK")
+            end
+        end)
+    end
+end
+
+for _, element in ipairs(playerGui:GetDescendants()) do
+    setupButtonListener(element)
+end
+playerGui.DescendantAdded:Connect(setupButtonListener)
 
 -- --- TOUCH INTEREST DETECTOR ---
 local function hookTouchInterest(p)
@@ -448,7 +471,8 @@ end
 
 local ClearBtn = createBottomButton("Clear", Color3.fromRGB(180, 60, 60), 1)
 ClearBtn.MouseButton1Click:Connect(function()
-    for _, v in pairs(logs) do v.label:Destroy() end; table.clear(logs)
+    for _, v in pairs(logs) do v.label:Destroy() end;
+    table.clear(logs)
 end)
 
 local CopyBtn = createBottomButton("Copy All", Theme.Panel, 2)
@@ -555,7 +579,7 @@ createToggle("Proximity Prompt Logs", false, function(s) proximityLoggingEnabled
 createToggle("GUI Interaction Logs", false, function(s) uiclick = s end)
 createToggle("Touch Interest Logs", false, function(s) touchInterestLoggingEnabled = s end)
 createToggle("Click Detector Logs", false, function(s) clickDetectorLoggingEnabled = s end)
-createToggle("Auto-Copy New Logs", false, function(s) autoCopyEnabled = s end)
+createToggle("Auto-Copy Logs", false, function(s) autoCopyEnabled = s end)
 createToggle("3D Click-to-Select Part's", false, function(s) clickToSelectEnabled = s end)
 createToggle("Anonymise Local Username", false, function(s) filterUsername = s; updateLogs() end)
 

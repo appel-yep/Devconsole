@@ -365,6 +365,10 @@ local function setupButtonListener(element)
     if element:IsA("GuiButton") then
         element.MouseButton1Click:Connect(function()
             if uiclick then
+                if element:IsDescendantOf(ScreenGui) then 
+                    return 
+                end
+
                 local logMsg = string.format("-- GUI INTERACTION\nButton Name: %s\nFull Path: %s\nAbsolutePos: %s\nAbsoluteSize: %s", 
                     element.Name, 
                     getFullPath(element), 
@@ -574,7 +578,7 @@ local function createToggle(text, default, callback)
 end
 
 createToggle("Show Log Timestamps", false, function(s) showTimestamp = s; updateLogs() end)
-createToggle("Remote event Logs", true, function(s) remoteLoggingEnabled = s end)
+createToggle("Remote Event Logs", true, function(s) remoteLoggingEnabled = s end)
 createToggle("Proximity Prompt Logs", false, function(s) proximityLoggingEnabled = s end)
 createToggle("GUI Interaction Logs", false, function(s) uiclick = s end)
 createToggle("Touch Interest Logs", false, function(s) touchInterestLoggingEnabled = s end)

@@ -327,7 +327,7 @@ if hookmetamethod then
                 for i = 2, #pathParts do
                     formattedPath = formattedPath .. ':WaitForChild("' .. pathParts[i] .. '")'
                 end
-                addLog(string.format("local args = %s\n%s:%s(unpack(args))", serializeTable(args), formattedPath, method), "REMOTE")
+                addLog(string.format("-- REMOTE EVENT\nlocal args = %s\n%s:%s(unpack(args))", serializeTable(args), formattedPath, method), "REMOTE")
             end)
         end
         return oldNamecall(self, ...)
@@ -464,7 +464,7 @@ local CoordsBtn = createBottomButton("Coords", Color3.fromRGB(46, 125, 50), 3)
 CoordsBtn.MouseButton1Click:Connect(function()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local cf = LocalPlayer.Character.HumanoidRootPart.CFrame
-        addLog("-- PLAYER COORDINATES\n " .. tostring(cf), Enum.MessageType.MessageInfo)
+        addLog("-- PLAYER COORDINATES\n" .. tostring(cf), Enum.MessageType.MessageInfo)
     else
         addLog("-- PLAYER COORDINATES\nCharacter position could not be found.", Enum.MessageType.MessageWarning)
     end
